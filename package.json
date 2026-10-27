@@ -1,0 +1,102 @@
+{
+  "name": "koishi-plugin-local-vits",
+  "description": "Multi-platform vits aggregation plugin",
+  "version": "0.5.3-local.1",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "dist",
+    "resources"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "koishi",
+    "plugin",
+    "service",
+    "vits"
+  ],
+  "author": "dingyi222666 <dingyi222666@foxmail.com>",
+  "contributors": [
+    {
+      "name": "SilverWolfHoney",
+      "url": "https://github.com/SilverWolfHoney"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SilverWolfHoney/koishi-plugin-local-vits.git",
+    "directory": "."
+  },
+  "bugs": {
+    "url": "https://github.com/SilverWolfHoney/koishi-plugin-local-vits/issues"
+  },
+  "homepage": "https://github.com/SilverWolfHoney/koishi-plugin-local-vits#readme",
+  "dependencies": {
+    "@initencounter/vits": "^0.0.3",
+    "js-yaml": "^4.1.0",
+    "semiver": "^1.1.0"
+  },
+  "devDependencies": {
+    "@koishijs/client": "^5.30.7",
+    "@koishijs/translator": "^1.1.1",
+    "@typescript-eslint/eslint-plugin": "^7.18.1-alpha.3",
+    "@typescript-eslint/parser": "^8.29.1-alpha.3",
+    "esbuild": "^0.25.2",
+    "esbuild-register": "npm:@shigma/esbuild-register@^1.1.1",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-prettier": "^5.2.6",
+    "eslint-plugin-promise": "^7.2.1",
+    "franc-min": "^6.2.0",
+    "koishi-plugin-adapter-onebot": "^6.8.0",
+    "yakumo": "^1.0.0",
+    "yakumo-esbuild": "^1.0.0",
+    "yakumo-mocha": "^1.0.0",
+    "yakumo-tsc": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@koishijs/plugin-console": "^5.30.7",
+    "franc-min": "^6.2.0",
+    "koishi": "^4.18.7",
+    "koishi-plugin-gradio-service": "^0.0.10"
+  },
+  "peerDependenciesMeta": {
+    "franc-min": {
+      "optional": true
+    },
+    "koishi-plugin-gradio-service": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "yarn yakumo build",
+    "bump": "yarn yakumo version",
+    "dep": "yarn yakumo upgrade",
+    "pub": "yarn yakumo publish",
+    "lint": "yarn eslint src --ext=ts",
+    "lint-fix": "yarn eslint src --ext=ts --fix"
+  },
+  "koishi": {
+    "description": {
+      "zh": "多平台 vits 聚合插件，自动翻译，可接入 `GPT-SoVITS-2` | `vits-simple-api` | `fish-audio`，以及部分 gradio webui"
+    },
+    "service": {
+      "implements": [
+        "vits"
+      ],
+      "optional": [
+        "translator",
+        "console",
+        "gradio"
+      ]
+    }
+  }
+}
