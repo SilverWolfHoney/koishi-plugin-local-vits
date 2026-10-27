@@ -17,8 +17,8 @@
 |---|---|---|
 | 1 | 新增模块级 `ttsCircuitOpenUntil` / `TTS_CIRCUIT_COOLDOWN = Infinity` | 熔断状态，失败后永久保持 |
 | 2 | `predict()` 开头：`Date.now() < ttsCircuitOpenUntil` 时直接 `throw` | 冷却期内不发起任何 HTTP |
-| 3 | `runWithRetry(..., 3, 5e3)` → `(..., 1, 0)` | 首次失败立即抛错，不再空转 10 秒 |
-| 4 | `runWithRetry` 包 try/catch：成功清熔断，失败永久开启熔断 | 需手动 `tts 开` 才恢复 |
+| 3 | **删除 `runWithRetry` 函数与调用**，改为直接 `await adapter.predict(...)` | 代码里不再有任何重试，首次失败立即抛错 |
+| 4 | 直接调用包 try/catch：成功清熔断，失败永久开启熔断 | 需手动 `tts 开` 才恢复 |
 | 5 | `ctx.http.post` 增加 `timeout: 10000` | 防隧道半开无限挂起 |
 
 效果：
@@ -27,7 +27,7 @@
 - 之后所有语音**立即失败**（`TTS unavailable (circuit open, retry later)`）→ 立刻降级文字；
 - **不会自动重试**：TTS 恢复后发 `tts 开` 手动解除，下一次语音才真实请求。
 
-## 指令（v2 新增）
+## 指令
 
 | 指令 | 说明 |
 |---|---|
