@@ -24,7 +24,7 @@ export function apply(ctx: Context, config: Config) {
     })
 
     ctx.plugin(LunaVitsService, config)
-    ctx.plugin(LunaVitsProvider)
+    ctx.plugin(LunaVitsProvider, config)
 
     ctx.inject(
         {

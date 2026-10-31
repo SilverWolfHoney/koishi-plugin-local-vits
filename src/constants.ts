@@ -14,6 +14,7 @@ import { DataService } from '@koishijs/plugin-console'
 import { Awaitable, Context, Schema } from 'koishi'
 import { PromiseLock } from './utils'
 import { LunaVitsService } from './service'
+import { Config } from './config'
 
 export class LunaVitsProvider extends DataService<string> {
     private vitsConfig: VitsConfig[] = []
@@ -26,7 +27,10 @@ export class LunaVitsProvider extends DataService<string> {
 
     lock = new PromiseLock()
 
-    constructor(ctx: Context) {
+    constructor(
+        ctx: Context,
+        public config: Config
+    ) {
         super(ctx, 'luna_vits_data')
     }
 
@@ -73,6 +77,9 @@ export class LunaVitsProvider extends DataService<string> {
             await fs.promises.readFile(this.resolveConfigPath(), 'utf-8')
         ) as VitsConfig[]
 
+        const managed = this.buildManagedConfig()
+        if (managed) configs.push(managed)
+
         const filteredConfigs = configs
             .filter((c) => c.enabled === true || c.enabled == null)
             .map(async (config) => {
@@ -86,6 +93,27 @@ export class LunaVitsProvider extends DataService<string> {
             })
 
         return await Promise.all(filteredConfigs)
+    }
+
+    /** 从控制台插件配置构造一个 vits-simple-api 后端（启用时） */
+    private buildManagedConfig(): VitsConfig | null {
+        const managed = this.config?.vitsApi
+        if (!managed?.enabled || !managed.url) return null
+
+        return {
+            name: '控制台 Vits-Simple-API',
+            type: 'vits-simple-api',
+            enabled: true,
+            url: managed.url.replace(/\/+$/, ''),
+            config: {
+                auto_pull_speaker: managed.autoPullSpeaker ?? true,
+                api_key: managed.apiKey || undefined,
+                username: managed.username || undefined,
+                password: managed.password || undefined,
+                timeout: managed.timeout ?? 60000
+            },
+            speakers: []
+        }
     }
 
     resolveConfigDir() {

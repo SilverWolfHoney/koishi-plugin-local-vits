@@ -2,16 +2,20 @@ import { FishAudioSpeaker, GradioSpeaker, QQVoiceSpeaker, Speaker, VitsConfig, V
 import { DataService } from '@koishijs/plugin-console';
 import { Awaitable, Context } from 'koishi';
 import { PromiseLock } from './utils';
+import { Config } from './config';
 export declare class LunaVitsProvider extends DataService<string> {
+    config: Config;
     private vitsConfig;
     private speakerKeyIdMap;
     private speakerKeyMap;
     private abortController;
     lock: PromiseLock;
-    constructor(ctx: Context);
+    constructor(ctx: Context, config: Config);
     refresh(): Promise<void>;
     stop(): Awaitable<void>;
     loadConfig(): Promise<VitsConfig<"GPT-SoVITS2" | "vits-simple-api" | "gradio" | "fish-audio" | "qq-voice">[]>;
+    /** 从控制台插件配置构造一个 vits-simple-api 后端（启用时） */
+    private buildManagedConfig;
     resolveConfigDir(): string;
     resolveConfigPath(): string;
     watchConfig(): void;

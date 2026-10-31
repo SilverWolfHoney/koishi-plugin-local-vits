@@ -80,9 +80,26 @@ node --check node_modules/koishi-plugin-local-vits/lib/index.js
 # 重启 Koishi
 ```
 
-## vits-simple-api 配置（认证与超时）
+## 配置后端（vits-simple-api）
 
-后端配置保存在数据目录的 `data/local-vits/config.yml`（首次启动时自动从插件模板生成）。`vits-simple-api` 条目支持以下字段：
+### 方式 A：控制台配置（推荐）
+
+在 Koishi 控制台 → 插件配置 → `local-vits` → 「后端配置 → vits-simple-api 快捷配置」里直接填写：
+
+| 配置项 | 说明 |
+| --- | --- |
+| `enabled` | 开启后使用控制台配置的后端，无需再编辑 `config.yml` |
+| `url` | vits-simple-api 地址，如 `http://127.0.0.1:23456` |
+| `username` / `password` | 后端开启 HTTP Basic Auth 时填（插件自动生成 `Authorization: Basic` 头） |
+| `apiKey` | 后端用 `X-API-KEY` 鉴权时填 |
+| `timeout` | 请求超时（毫秒），默认 `60000`，拉取 speaker 列表与合成共用 |
+| `autoPullSpeaker` | 自动从后端拉取 speaker 列表（默认开启） |
+
+开启 `enabled` 并填好 `url` 后保存，speaker 列表会自动从后端拉取，`defaultSpeaker` 里就能选到。
+
+### 方式 B：data/local-vits/config.yml
+
+后端也可以像上游一样写在数据目录的 `data/local-vits/config.yml`（首次启动时自动从插件模板生成）。`vits-simple-api` 条目支持以下字段：
 
 ```yaml
 - type: "vits-simple-api"
@@ -99,6 +116,7 @@ node --check node_modules/koishi-plugin-local-vits/lib/index.js
     # api_key: 'your_api_key'
 ```
 
+- 方式 A 与方式 B 可以同时存在，会各自作为独立后端加载；
 - `timeout` 同时作用于拉取 speaker 列表和语音合成请求；
 - 如果后端返回 401，插件会在日志中提示检查 `username` / `password`（或 `headers.Authorization`）；
 - 也可以直接用 `headers` 字段传自定义请求头（与 `config` 同级），例如已经拼好的 `Authorization`。
