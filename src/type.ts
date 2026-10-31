@@ -45,6 +45,12 @@ export type Speaker = VitsConfig['speakers'][number]
 export interface VitsSimpleApiConfig {
     auto_pull_speaker?: boolean
     api_key?: string
+    /** HTTP Basic Auth 用户名（后端开启 Basic Auth 时填写） */
+    username?: string
+    /** HTTP Basic Auth 密码 */
+    password?: string
+    /** 请求超时（毫秒），默认 60000 */
+    timeout?: number
 }
 
 export interface FishAudioConfig {

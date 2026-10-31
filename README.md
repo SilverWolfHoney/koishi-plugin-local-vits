@@ -4,7 +4,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/koishi-plugin-local-vits.svg)](https://www.npmjs.com/package/koishi-plugin-local-vits)
 [![license](https://img.shields.io/npm/l/koishi-plugin-local-vits.svg)](https://github.com/SilverWolfHoney/koishi-plugin-local-vits/blob/main/LICENSE)
 
-> 本仓库是 [`koishi-plugin-luna-vits@0.5.3`](https://github.com/ChatLunaLab/luna-vits) 的**本地化改版**，由 SilverWolfHoney 维护，与上游项目无隶属关系。
+> **（自用）** 本仓库是 [`koishi-plugin-luna-vits@0.5.3`](https://github.com/ChatLunaLab/luna-vits) 的**本地化改版**，由 SilverWolfHoney 维护，与上游项目无隶属关系，主要服务于作者自己的部署环境，不保证对通用场景的兼容。
 > 原项目版权归 dingyi（Copyright © 2024-present dingyi），修改部分版权归 SilverWolfHoney（Copyright © 2026-present），按 MIT License 分发。
 
 ## 改版说明
@@ -79,6 +79,29 @@ node patch/patch.mjs node_modules/koishi-plugin-local-vits/lib/index.js
 node --check node_modules/koishi-plugin-local-vits/lib/index.js
 # 重启 Koishi
 ```
+
+## vits-simple-api 配置（认证与超时）
+
+后端配置保存在数据目录的 `data/local-vits/config.yml`（首次启动时自动从插件模板生成）。`vits-simple-api` 条目支持以下字段：
+
+```yaml
+- type: "vits-simple-api"
+  enabled: true
+  url: "http://127.0.0.1:23456"   # 你的后端地址
+  config:
+    auto_pull_speaker: true
+    # 后端开启 HTTP Basic Auth 时填写（插件会自动生成 Authorization: Basic 头）
+    username: 'your_user'
+    password: 'your_pass'
+    # 请求超时（毫秒），默认 60000
+    timeout: 60000
+    # 后端用 X-API-KEY 鉴权时填这个
+    # api_key: 'your_api_key'
+```
+
+- `timeout` 同时作用于拉取 speaker 列表和语音合成请求；
+- 如果后端返回 401，插件会在日志中提示检查 `username` / `password`（或 `headers.Authorization`）；
+- 也可以直接用 `headers` 字段传自定义请求头（与 `config` 同级），例如已经拼好的 `Authorization`。
 
 ## 开发与构建
 

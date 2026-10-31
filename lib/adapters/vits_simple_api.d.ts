@@ -4,6 +4,8 @@ import { VitsAdapter } from './base';
 export declare class VitsSimpleAPIAdapter extends VitsAdapter {
     type: "vits-simple-api";
     predict(input: string, config: VitsConfig<'vits-simple-api'>, options: VitsAdapter.Config): Promise<Element>;
+    /** 构建请求头：合并自定义 headers，并支持 api_key / HTTP Basic Auth */
+    private _buildHeaders;
     private _generatePayload;
     private _generateVitsPayload;
     private _generateW2V2VitsPayload;

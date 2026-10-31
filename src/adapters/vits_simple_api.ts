@@ -42,13 +42,43 @@ export class VitsSimpleAPIAdapter extends VitsAdapter {
             formData.append(key, value.toString())
         }
 
-        const response = await this.ctx.http.post(url, formData, {
-            headers,
-            responseType: 'arraybuffer',
-            timeout: 10000
-        })
+        try {
+            const response = await this.ctx.http.post(url, formData, {
+                headers,
+                responseType: 'arraybuffer',
+                timeout: config.config.timeout ?? 60000
+            })
 
-        return h.audio(response, payload['format'] ?? 'wav')
+            return h.audio(response, payload['format'] ?? 'wav')
+        } catch (error) {
+            if ((error as { response?: { status?: number } })?.response?.status === 401) {
+                this.ctx.logger.warn(
+                    'vits-simple-api 要求认证（401）：请在配置里填写 username / password（HTTP Basic Auth），或在 headers 里配置 Authorization'
+                )
+            }
+            throw error
+        }
+    }
+
+    /** 构建请求头：合并自定义 headers，并支持 api_key / HTTP Basic Auth */
+    private _buildHeaders(config: VitsConfig<'vits-simple-api'>) {
+        const headers: Record<string, string> = Object.assign(
+            {},
+            config.headers ?? {}
+        )
+
+        if (config.config.api_key) {
+            headers['X-API-KEY'] = config.config.api_key
+        }
+
+        const { username, password } = config.config
+        if (username && password && !headers['Authorization']) {
+            headers['Authorization'] =
+                'Basic ' +
+                Buffer.from(`${username}:${password}`).toString('base64')
+        }
+
+        return headers
     }
 
     private _generatePayload(
@@ -82,11 +112,7 @@ export class VitsSimpleAPIAdapter extends VitsAdapter {
             payload[1] = `${config.url}/voice/gpt-sovits`
         }
 
-        payload[2] = {}
-
-        if (config.config.api_key) {
-            payload[2]['X-API-KEY'] = config.config.api_key
-        }
+        payload[2] = this._buildHeaders(config)
 
         for (const key of ['lang', 'prompt_lang']) {
             if (payload[0][key]) {
@@ -246,12 +272,11 @@ export class VitsSimpleAPIAdapter extends VitsAdapter {
             const speakerMap = (await this.ctx.http.get(
                 `${config.url}/voice/speakers`,
                 {
-                    headers: Object.assign(
-                        {
-                            'Content-Type': 'application/json'
-                        },
-                        config.headers ?? {}
-                    )
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...this._buildHeaders(config)
+                    },
+                    timeout: config.config.timeout ?? 60000
                 }
             )) as Record<string, Speakers[]>
 
