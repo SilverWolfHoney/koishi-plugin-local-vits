@@ -222,6 +222,9 @@ export class LunaVitsProvider extends DataService<string> {
     }
 
     mapSpeakers() {
+        // 按 speaker key 去重：插件 reload / 多次 refresh 时，
+        // 旧实例与多份配置可能产生同名条目，导致控制台下拉出现重复项。
+        const seen = new Set<string>()
         return this.vitsConfig
             .flatMap((config) => {
                 const result: [VitsConfig, string, Speaker][] = []
@@ -232,8 +235,14 @@ export class LunaVitsProvider extends DataService<string> {
 
                 return result
             })
+            .filter((entry) => {
+                const key = entry[1]
+                if (seen.has(key)) return false
+                seen.add(key)
+                return true
+            })
             .sort((a, b) => (a[1] < b[1] ? 1 : -1))
-            .map((k, index) => [k, baseSpeakId++])
+            .map((k) => [k, baseSpeakId++])
             .reduce(
                 (acc, [k, v]) => {
                     acc[v as number] = k as [VitsConfig, string, Speaker]
