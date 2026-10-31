@@ -31,7 +31,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/SilverWolfHoney/koishi-plugin-local-vits.git",
+    "url": "git+https://github.com/SilverWolfHoney/koishi-plugin-local-vits.git",
     "directory": "."
   },
   "bugs": {
