@@ -58,6 +58,12 @@ export class LunaVitsProvider extends DataService<string> {
     }
 
     async loadConfig() {
+        // ctx.vits 由 LunaVitsService 异步注册；构造期的初次 refresh 早于服务就绪，
+        // 此时直接访问会抛 "Cannot read properties of undefined (reading 'getSpeakerList')"。
+        // 这里跳过，等 inject(['vits']) 回调里的 refresh 再加载。
+        if (!this.ctx.vits) {
+            return []
+        }
         try {
             await fs.promises.access(this.resolveConfigPath())
         } catch {
