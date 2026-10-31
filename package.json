@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-local-vits",
-  "description": "Multi-platform vits aggregation plugin",
-  "version": "0.5.3-local.1",
+  "description": "多平台 vits 聚合插件（koishi-plugin-luna-vits 的本地化改版：TTS 失败快速熔断、tts 开关指令、HTTP 超时保护）",
+  "version": "0.6.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "types": "lib/index.d.ts",
@@ -15,13 +15,18 @@
     "koishi",
     "plugin",
     "service",
-    "vits"
+    "vits",
+    "tts",
+    "gpt-sovits",
+    "vits-simple-api",
+    "fish-audio"
   ],
-  "author": "dingyi222666 <dingyi222666@foxmail.com>",
+  "author": "SilverWolfHoney",
   "contributors": [
     {
-      "name": "SilverWolfHoney",
-      "url": "https://github.com/SilverWolfHoney"
+      "name": "dingyi222666",
+      "email": "dingyi222666@foxmail.com",
+      "url": "https://github.com/ChatLunaLab/luna-vits"
     }
   ],
   "repository": {
@@ -86,6 +91,7 @@
   },
   "koishi": {
     "description": {
+      "en": "Multi-platform vits aggregation plugin (localized fork of koishi-plugin-luna-vits: fast circuit breaker on TTS failure, tts on/off command, HTTP timeout guard).",
       "zh": "多平台 vits 聚合插件，自动翻译，可接入 `GPT-SoVITS-2` | `vits-simple-api` | `fish-audio`，以及部分 gradio webui"
     },
     "service": {

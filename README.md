@@ -1,6 +1,11 @@
 # koishi-plugin-local-vits
 
-> 本仓库是 [`koishi-plugin-luna-vits@0.5.3`](https://github.com/ChatLunaLab/luna-vits) 的**本地化改版**。
+[![npm](https://img.shields.io/npm/v/koishi-plugin-local-vits.svg)](https://www.npmjs.com/package/koishi-plugin-local-vits)
+[![npm downloads](https://img.shields.io/npm/dm/koishi-plugin-local-vits.svg)](https://www.npmjs.com/package/koishi-plugin-local-vits)
+[![license](https://img.shields.io/npm/l/koishi-plugin-local-vits.svg)](https://github.com/SilverWolfHoney/koishi-plugin-local-vits/blob/main/LICENSE)
+
+> 本仓库是 [`koishi-plugin-luna-vits@0.5.3`](https://github.com/ChatLunaLab/luna-vits) 的**本地化改版**，由 SilverWolfHoney 维护，与上游项目无隶属关系。
+> 原项目版权归 dingyi（Copyright © 2024-present dingyi），修改部分版权归 SilverWolfHoney（Copyright © 2026-present），按 MIT License 分发。
 
 ## 改版说明
 
@@ -43,9 +48,20 @@ TTS 关闭或隧道断开时，每段语音要空转约 10 秒才抛错并降级
 
 ## 安装
 
-本仓库不发布到 Koishi 插件市场。任选一种：
+### 从插件市场安装（推荐）
 
-**方式 A：直接放到 node_modules**
+在 Koishi 控制台打开「插件市场」，搜索 `local-vits`（或包名 `koishi-plugin-local-vits`）安装，然后在「插件配置」里启用。
+
+### 使用包管理器安装
+
+```bash
+cd /path/to/koishi-app
+npm install koishi-plugin-local-vits
+```
+
+安装后重启 Koishi（或让控制台热重载），在插件配置中启用 `local-vits`。
+
+### 从源码安装
 
 把本仓库目录放到 Koishi 的 `node_modules/koishi-plugin-local-vits/`，然后在 `koishi.yml` 里启用：
 
@@ -53,9 +69,9 @@ TTS 关闭或隧道断开时，每段语音要空转约 10 秒才抛错并降级
 local-vits:xxx: {}
 ```
 
-**方式 B：打补丁**
+### 打补丁（仅给已有安装用）
 
-`patch/` 目录是给已有安装用的增量补丁脚本：
+`patch/` 目录是增量补丁脚本，用于在已安装的旧版本上应用本版改动：
 
 ```bash
 cd <koishi-root>

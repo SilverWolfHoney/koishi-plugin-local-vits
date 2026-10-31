@@ -2,3 +2,5 @@ node_modules/
 *.bak
 _backups/
 .DS_Store
+package-lock.json
+*.tgz
