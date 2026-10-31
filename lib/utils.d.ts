@@ -8,7 +8,6 @@ export declare class PromiseLock {
     runLocked<T>(callback: () => Promise<T> | T): Promise<T>;
     unlock(): void;
 }
-export declare function runWithRetry<T>(func: () => Promise<T>, retry: number, interval: number): Promise<T>;
 export declare class TTLCache<T> {
     private _ttlTime;
     private _cache;

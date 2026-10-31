@@ -1,7 +1,7 @@
 ## 🎉 配置
 
-配置文件在 [`data/local-vits/config.yml`](../files/data/local-vits/config.yml)，请前往此处查看。
-如需查看最新版本的配置信息说明，请前往 [GitHub](https://github.com/SilverWolfHoney/koishi-plugin-local-vits/blob/main/resources/config.yml) 查看。
+配置文件在 [`data/luna-vits/config.yml`](../files/data/luna-vits/config.yml)，请前往此处查看。
+如需查看最新版本的配置信息说明，请前往 [GitHub](https://github.com/ChatLunaLab/luna-vits/blob/main/resources/config.yml) 查看。
 
 我们现支持热更新配置文件，以及下面的信息。无需重启即可查看最新讲者列表。
 

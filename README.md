@@ -80,6 +80,20 @@ node --check node_modules/koishi-plugin-local-vits/lib/index.js
 # 重启 Koishi
 ```
 
+## 开发与构建
+
+本仓库包含完整 TypeScript 源码（`src/`，控制台前端在 `client/`），构建产物 `lib/`、`dist/` 已提交，可直接发布。
+
+```bash
+npm install --legacy-peer-deps
+npm run build     # yakumo build: tsc 类型声明 + esbuild 打包 + vite 前端
+```
+
+- `src/`：插件主逻辑（`service.ts` 熔断、`index.ts` 指令、`constants.ts` 数据服务）
+- `client/`：控制台页面
+- `lib/`：构建产物（`index.js` + 类型声明）
+- `dist/`：控制台前端产物
+
 ## 从 luna-vits 迁移
 
 数据目录已改为 `data/local-vits`。如果之前用过 luna-vits：

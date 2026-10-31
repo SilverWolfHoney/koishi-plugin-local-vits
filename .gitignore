@@ -4,3 +4,4 @@ _backups/
 .DS_Store
 package-lock.json
 *.tgz
+tsconfig.tsbuildinfo
