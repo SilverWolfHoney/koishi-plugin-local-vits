@@ -6,4 +6,4 @@ export declare function getSpeakerList(app: Client, config: VitsConfig<'gradio'>
     fn_index: string | number;
     name: string;
 }[]>;
-export declare function generatePayload(input: string, client: Client, config: VitsConfig<'gradio'>, speaker: GradioSpeaker, options: VitsAdapter.Config): Promise<((string | number | boolean | string[]) & (string | number | boolean | string[] | import("../../../type").BaseSpeaker))[]>;
+export declare function generatePayload(input: string, client: Client, config: VitsConfig<'gradio'>, speaker: GradioSpeaker, options: VitsAdapter.Config): Promise<((string | number | boolean | string[]) & (string | number | boolean | import("../../../type").BaseSpeaker | string[]))[]>;

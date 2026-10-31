@@ -172,7 +172,15 @@ export class LunaVitsService extends Vits {
     }
 
     getSpeakerList(config: VitsConfig) {
-        return this._adapters[config.type].getSpeakerList(config)
+        // 适配器由 inject(['vits', ...]) 回调延迟注册；Provider 构造期的初次
+        // refresh 可能早于注册，此时 _adapters[config.type] 为 undefined，
+        // 直接调用会抛 "Cannot read properties of undefined (reading 'getSpeakerList')"。
+        // 返回空列表，等适配器就绪后的 refresh 再加载 speakers。
+        const adapter = this._adapters[config.type]
+        if (!adapter) {
+            return []
+        }
+        return adapter.getSpeakerList(config)
     }
 
     static inject = {

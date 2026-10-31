@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-local-vits",
   "description": "多平台 vits 聚合插件（自用；luna-vits 本地化改版：TTS 熔断、tts 指令、控制台可配后端地址/账密/超时）",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "types": "lib/index.d.ts",

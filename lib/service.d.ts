@@ -28,7 +28,7 @@ export declare class LunaVitsService extends Vits {
     predict(input: string, options: VitsAdapter.Config, session?: Session): Promise<h>;
     private checkLanguage;
     say(options: Vits.Result): Promise<h>;
-    getSpeakerList(config: VitsConfig): Promise<(import("./type").GPTSoVITS2Speaker | import("./type").VitsSimpleApiSpeaker | import("./type").FishAudioSpeaker | import("./type").QQVoiceSpeaker | import("./type").GradioSpeaker)[]>;
+    getSpeakerList(config: VitsConfig): any[] | Promise<(import("./type").GPTSoVITS2Speaker | import("./type").VitsSimpleApiSpeaker | import("./type").FishAudioSpeaker | import("./type").QQVoiceSpeaker | import("./type").GradioSpeaker)[]>;
     static inject: {
         console: {
             required: boolean;
