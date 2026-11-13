@@ -14,6 +14,7 @@ import { LunaVitsProvider } from './constants'
 import { getSpeaker } from './utils'
 import { FishAudioAdapter } from './adapters/fish_audio'
 import { QQVoiceAdapter } from './adapters/qq_voice'
+import { applyChatlunaV2 } from './v2'
 
 export function apply(ctx: Context, config: Config) {
     ctx.inject(['console'], (ctx) => {
@@ -166,6 +167,10 @@ export function apply(ctx: Context, config: Config) {
             await ctx.console.services.luna_vits_data.refresh()
         }
     )
+
+    // ChatLuna v2（cordis）下通过 voice 服务的 handler 接入 <voice> 语音链路；
+    // Koishi 4.x / ChatLuna v1 没有 voice 服务，此调用不产生副作用。
+    applyChatlunaV2(ctx, config)
 }
 
 export * from './config'

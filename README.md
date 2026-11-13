@@ -46,6 +46,17 @@ TTS 关闭或隧道断开时，每段语音要空转约 10 秒才抛错并降级
 
 原有 `lunavits <文本>` 测试指令保持不变。
 
+## ChatLuna v2 适配
+
+ChatLuna v2（cordis 架构）的语音链路改为 `@chatluna/chat-voice` 的 `voice` 服务：模型输出 `<voice>` 元素时，由 handler 链渲染成可发送的消息。本插件在检测到 `voice` 服务时会注册一个高优先级 handler：
+
+- 把 `<voice>` 里的文本交给 local-vits 合成（走 `ctx.vits.predict`，复用现有适配器、熔断开关与 API Key 配置）；
+- 合成成功返回音频元素；失败、熔断或被 `tts 关` 关闭时自动降级给后续 handler（例如 `@speak` 模型）或纯文本，不会阻断回复；
+- `<voice>` 的 `voice` 属性会当作 local-vits 的讲者名使用，留空则回退到配置里的 `defaultSpeaker`；
+- Koishi 4.x / ChatLuna v1 没有 `voice` 服务，此适配完全不生效，原有 `ctx.vits` 调用方式不受影响。
+
+启用方式：在 ChatLuna v2 里安装并启用 `@chatluna/chat-voice`（提供 `voice` 服务）后，模型输出的 `<voice>` 就会优先走本地 TTS。
+
 ## 安装
 
 ### 从插件市场安装（推荐）
