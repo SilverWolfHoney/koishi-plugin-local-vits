@@ -53,18 +53,30 @@ export function apply(ctx: Context, config: Config) {
         engine.addAdapter(new GradioAdapter(ctx))
     })
 
-    // 加载 data/local-vits/config.yml（不存在时复制默认配置）并拉取 speaker 列表
-    void engine.registry
-        .refresh()
-        .then(() => {
+    // 加载 data/local-vits/config.yml（不存在时复制默认配置）并拉取 speaker 列表。
+    // 启动瞬间反向隧道/TTS 后端可能尚未就绪，失败后延迟重试。
+    let speakerRetry = 3
+
+    const loadSpeakers = async () => {
+        try {
+            await engine.registry.refresh()
             logger.info(
                 'speaker 注册表已加载：%s 个',
                 Object.keys(engine.registry.getSpeakerKeyMap()).length
             )
-        })
-        .catch((e) => {
-            logger.warn('加载 speaker 失败: %s', String(e))
-        })
+        } catch (e) {
+            logger.warn(
+                '加载 speaker 失败（剩余重试 %s 次）: %s',
+                speakerRetry - 1,
+                String(e)
+            )
+            if (--speakerRetry > 0) {
+                ctx.setTimeout(loadSpeakers, 15000)
+            }
+        }
+    }
+
+    void loadSpeakers()
 
     // 控制台数据服务：仅 Koishi 4.x（console + vits 服务都存在）时注册
     ctx.inject({ console: { required: false } }, (ctx) => {
