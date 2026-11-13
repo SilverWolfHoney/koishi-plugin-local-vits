@@ -1,293 +1,78 @@
 import path from 'path'
-import fs, { watch } from 'fs'
-import {
-    FishAudioSpeaker,
-    GradioConfig,
-    GradioSpeaker,
-    QQVoiceSpeaker,
-    Speaker,
-    VitsConfig,
-    VitsSimpleApiSpeaker
-} from './type'
-import { load } from 'js-yaml'
+import fs from 'fs'
+import { Context, Schema } from 'koishi'
 import { DataService } from '@koishijs/plugin-console'
-import { Awaitable, Context, Schema } from 'koishi'
-import { PromiseLock } from './utils'
-import { LunaVitsService } from './service'
 import { Config } from './config'
+import { LunaVitsService } from './service'
+import { SpeakerRegistry } from './registry'
 
+/**
+ * 控制台数据服务（仅 Koishi 4.x / ChatLuna v1 的 console 可用时注册）。
+ *
+ * speaker 的加载/映射逻辑已抽到 SpeakerRegistry，这里只是把它包装成
+ * @koishijs/plugin-console 的 DataService，供控制台面板与 schema.dynamic 使用。
+ * ChatLuna v2（cordis）下 console 服务不可用，不会注册本类。
+ */
 export class LunaVitsProvider extends DataService<string> {
-    private vitsConfig: VitsConfig[] = []
-
-    private speakerKeyIdMap: Record<number, [VitsConfig, string, Speaker]> = {}
-
-    private speakerKeyMap: Record<string, [VitsConfig, Speaker]> = {}
-
-    private abortController = new AbortController()
-
-    lock = new PromiseLock()
+    private readonly registry: SpeakerRegistry
 
     constructor(
         ctx: Context,
         public config: Config
     ) {
         super(ctx, 'luna_vits_data')
+
+        const vits = ctx.get('vits') as LunaVitsService | undefined
+
+        if (!vits?.engine?.registry) {
+            throw new Error('vits 服务尚未注册')
+        }
+
+        this.registry = vits.engine.registry
     }
 
     async refresh() {
-        await this.lock.lock()
-
-        this.vitsConfig = await this.loadConfig()
-        this.speakerKeyIdMap = this.mapSpeakers()
-        this.speakerKeyMap = this.mapSpeakerKey()
-
-        this.lock.unlock()
+        await this.registry.refresh()
 
         this.ctx.schema.set(
             'speaker',
-            Schema.union(Object.values(this.speakerKeyIdMap).map((s) => s[1]))
+            Schema.union(
+                Object.values(this.registry.speakerKeyIdMap).map((s) => s[1])
+            )
         )
-
-        this.watchConfig()
 
         await super.refresh(true)
     }
 
-    stop(): Awaitable<void> {
-        this.abortController.abort()
-    }
-
-    async loadConfig() {
-        // ctx.vits 由 LunaVitsService 异步注册；构造期的初次 refresh 早于服务就绪，
-        // 此时直接访问会抛 "Cannot read properties of undefined (reading 'getSpeakerList')"。
-        // 这里跳过，等 inject(['vits']) 回调里的 refresh 再加载。
-        if (!this.ctx.vits) {
-            return []
-        }
-        try {
-            await fs.promises.access(this.resolveConfigPath())
-        } catch {
-            const defaultPath = path.join(__dirname, '../resources/config.yml')
-
-            try {
-                await fs.promises.mkdir(this.resolveConfigDir(), {
-                    recursive: true
-                })
-            } catch (e) {
-                //
-            }
-            await fs.promises.copyFile(defaultPath, this.resolveConfigPath())
-        }
-
-        const configs = load(
-            await fs.promises.readFile(this.resolveConfigPath(), 'utf-8')
-        ) as VitsConfig[]
-
-        const managed = this.buildManagedConfig()
-        if (managed) configs.push(managed)
-
-        const filteredConfigs = configs
-            .filter((c) => c.enabled === true || c.enabled == null)
-            .map(async (config) => {
-                const speakerList = await (
-                    this.ctx.vits as LunaVitsService
-                ).getSpeakerList(config)
-
-                config.speakers = speakerList
-
-                return config
-            })
-
-        return await Promise.all(filteredConfigs)
-    }
-
-    /** 从控制台插件配置构造一个 vits-simple-api 后端（启用时） */
-    private buildManagedConfig(): VitsConfig | null {
-        const managed = this.config?.vitsApi
-        if (!managed?.enabled || !managed.url) return null
-
-        return {
-            name: '控制台 Vits-Simple-API',
-            type: 'vits-simple-api',
-            enabled: true,
-            url: managed.url.replace(/\/+$/, ''),
-            config: {
-                auto_pull_speaker: managed.autoPullSpeaker ?? true,
-                api_key: managed.apiKey || undefined,
-                username: managed.username || undefined,
-                password: managed.password || undefined,
-                timeout: managed.timeout ?? 60000
-            },
-            speakers: []
-        }
-    }
-
-    resolveConfigDir() {
-        return path.resolve(this.ctx.baseDir, 'data/local-vits')
-    }
-
-    resolveConfigPath() {
-        return path.resolve(this.resolveConfigDir(), 'config.yml')
-    }
-
-    watchConfig() {
-        if (this.abortController) {
-            this.abortController.abort()
-        }
-
-        this.abortController = new AbortController()
-
-        const debounceFn = this.ctx.debounce(async () => {
-            this.ctx.logger.info('Configuration changed, refreshing')
-            await this.refresh()
-            this.ctx.logger.info(
-                `Successfully loaded ${Object.keys(this.speakerKeyIdMap).length} speakers`
-            )
-        }, 300) // Adjust the debounce delay as needed
-
-        watch(
-            path.resolve('data/local-vits/config.yml'),
-            {
-                signal: this.abortController.signal
-            },
-            async (event, filename) => {
-                await debounceFn()
-            }
-        )
-    }
-
-    processSpeaker(
-        speaker: Speaker,
-        config: VitsConfig,
-        result: [VitsConfig, string, Speaker][]
-    ) {
-        if (config.type === 'GPT-SoVITS2') {
-            // five languages
-
-            for (const language of ['ZH', 'EN', 'JA', 'KO', 'YUO', 'AUTO']) {
-                result.push([config, `${speaker.name}_${language}`, speaker])
-            }
-        } else if (config.type === 'gradio') {
-            const requestConfig = config.config as GradioConfig
-            speaker = speaker as GradioSpeaker
-
-            const languages = (requestConfig.languages as string[]) ?? [
-                'ZH',
-                'EN',
-                'JA',
-                'AUTO'
-            ]
-            if (languages) {
-                for (const language of languages) {
-                    result.push([
-                        config,
-                        `${speaker.name}_${language.toUpperCase()}`,
-                        speaker
-                    ])
-                }
-            }
-        } else if (config.type === 'vits-simple-api') {
-            speaker = speaker as VitsSimpleApiSpeaker
-
-            const languages = speaker.languages
-            if (languages) {
-                for (const language of languages) {
-                    result.push([
-                        config,
-                        `${speaker.name}_${language.toUpperCase()}`,
-                        speaker
-                    ])
-                }
-            }
-            result.push([config, `${speaker.name}_AUTO`, speaker])
-        } else if (config.type === 'qq-voice') {
-            speaker = speaker as QQVoiceSpeaker
-
-            result.push([config, `QQ_${speaker.name}_AUTO`, speaker])
-        } else if (config.type === 'fish-audio') {
-            speaker = speaker as FishAudioSpeaker
-
-            const languages = speaker.languages
-            if (languages) {
-                for (const language of languages) {
-                    result.push([
-                        config,
-                        `${speaker.name}_${language.toUpperCase()}`,
-                        speaker
-                    ])
-                }
-            }
-            result.push([config, `${speaker.name}_AUTO`, speaker])
-        }
-    }
-
-    mapSpeakers() {
-        // 按 speaker key 去重：插件 reload / 多次 refresh 时，
-        // 旧实例与多份配置可能产生同名条目，导致控制台下拉出现重复项。
-        const seen = new Set<string>()
-        return this.vitsConfig
-            .flatMap((config) => {
-                const result: [VitsConfig, string, Speaker][] = []
-
-                for (const speaker of config.speakers) {
-                    this.processSpeaker(speaker, config, result)
-                }
-
-                return result
-            })
-            .filter((entry) => {
-                const key = entry[1]
-                if (seen.has(key)) return false
-                seen.add(key)
-                return true
-            })
-            .sort((a, b) => (a[1] < b[1] ? 1 : -1))
-            .map((k) => [k, baseSpeakId++])
-            .reduce(
-                (acc, [k, v]) => {
-                    acc[v as number] = k as [VitsConfig, string, Speaker]
-                    return acc
-                },
-                {} as Record<number, [VitsConfig, string, Speaker]>
-            )
-    }
-
-    mapSpeakerKey() {
-        return Object.fromEntries(
-            Object.entries(this.speakerKeyIdMap).map(([k, v]) => [
-                v[1],
-                [v[0], v[2]] as [VitsConfig, Speaker]
-            ])
-        )
+    stop() {
+        this.registry.stop()
     }
 
     // format as markdown table item list [speaker_name, speaker_id]
-    get() {
-        return this.lock.runLocked(async () => {
-            const speakers = Object.entries(this.speakerKeyIdMap)
-                .map(([k, v]) => [v[1], k])
-                .map(([speaker, id]) => `| ${speaker} | ${id} |`)
-                .join('\n')
+    async get() {
+        const speakers = Object.entries(this.registry.speakerKeyIdMap)
+            .map(([k, v]) => [v[1], k])
+            .map(([speaker, id]) => `| ${speaker} | ${id} |`)
+            .join('\n')
 
-            const usage = await fs.promises.readFile(
-                path.resolve(__dirname, '../resources/usage.md'),
-                'utf-8'
-            )
+        const usage = await fs.promises.readFile(
+            path.resolve(__dirname, '../resources/usage.md'),
+            'utf-8'
+        )
 
-            return usage.replace('{speakers}', speakers)
-        })
+        return usage.replace('{speakers}', speakers)
     }
 
     async getVitsConfig() {
-        return this.lock.runLocked(() => this.vitsConfig)
+        return this.registry.getVitsConfig()
     }
 
     async getSpeakerKeyIdMap() {
-        return this.lock.runLocked(() => this.speakerKeyIdMap)
+        return this.registry.getSpeakerKeyIdMap()
     }
 
     async getSpeakerKeyMap() {
-        return this.lock.runLocked(() => this.speakerKeyMap)
+        return this.registry.getSpeakerKeyMap()
     }
 
     static name = 'local-vits-config'
@@ -298,14 +83,9 @@ export class LunaVitsProvider extends DataService<string> {
         },
         vits: {
             required: true
-        },
-        gradio: {
-            required: false
         }
     } as unknown as string[]
 }
-
-let baseSpeakId = 114514
 
 declare module '@koishijs/plugin-console' {
     // eslint-disable-next-line @typescript-eslint/no-namespace

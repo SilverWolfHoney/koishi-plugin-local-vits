@@ -1,33 +1,23 @@
-import { FishAudioSpeaker, GradioSpeaker, QQVoiceSpeaker, Speaker, VitsConfig, VitsSimpleApiSpeaker } from './type';
+import { Context } from 'koishi';
 import { DataService } from '@koishijs/plugin-console';
-import { Awaitable, Context } from 'koishi';
-import { PromiseLock } from './utils';
 import { Config } from './config';
+/**
+ * 控制台数据服务（仅 Koishi 4.x / ChatLuna v1 的 console 可用时注册）。
+ *
+ * speaker 的加载/映射逻辑已抽到 SpeakerRegistry，这里只是把它包装成
+ * @koishijs/plugin-console 的 DataService，供控制台面板与 schema.dynamic 使用。
+ * ChatLuna v2（cordis）下 console 服务不可用，不会注册本类。
+ */
 export declare class LunaVitsProvider extends DataService<string> {
     config: Config;
-    private vitsConfig;
-    private speakerKeyIdMap;
-    private speakerKeyMap;
-    private abortController;
-    lock: PromiseLock;
+    private readonly registry;
     constructor(ctx: Context, config: Config);
     refresh(): Promise<void>;
-    stop(): Awaitable<void>;
-    loadConfig(): Promise<VitsConfig<"GPT-SoVITS2" | "vits-simple-api" | "gradio" | "fish-audio" | "qq-voice">[]>;
-    /** 从控制台插件配置构造一个 vits-simple-api 后端（启用时） */
-    private buildManagedConfig;
-    resolveConfigDir(): string;
-    resolveConfigPath(): string;
-    watchConfig(): void;
-    processSpeaker(speaker: Speaker, config: VitsConfig, result: [VitsConfig, string, Speaker][]): void;
-    mapSpeakers(): Record<number, [VitsConfig<"GPT-SoVITS2" | "vits-simple-api" | "gradio" | "fish-audio" | "qq-voice">, string, import("./type").GPTSoVITS2Speaker | VitsSimpleApiSpeaker | FishAudioSpeaker | QQVoiceSpeaker | GradioSpeaker]>;
-    mapSpeakerKey(): {
-        [k: string]: [VitsConfig<"GPT-SoVITS2" | "vits-simple-api" | "gradio" | "fish-audio" | "qq-voice">, import("./type").GPTSoVITS2Speaker | VitsSimpleApiSpeaker | FishAudioSpeaker | QQVoiceSpeaker | GradioSpeaker];
-    };
+    stop(): void;
     get(): Promise<string>;
-    getVitsConfig(): Promise<VitsConfig<"GPT-SoVITS2" | "vits-simple-api" | "gradio" | "fish-audio" | "qq-voice">[]>;
-    getSpeakerKeyIdMap(): Promise<Record<number, [VitsConfig<"GPT-SoVITS2" | "vits-simple-api" | "gradio" | "fish-audio" | "qq-voice">, string, import("./type").GPTSoVITS2Speaker | VitsSimpleApiSpeaker | FishAudioSpeaker | QQVoiceSpeaker | GradioSpeaker]>>;
-    getSpeakerKeyMap(): Promise<Record<string, [VitsConfig<"GPT-SoVITS2" | "vits-simple-api" | "gradio" | "fish-audio" | "qq-voice">, import("./type").GPTSoVITS2Speaker | VitsSimpleApiSpeaker | FishAudioSpeaker | QQVoiceSpeaker | GradioSpeaker]>>;
+    getVitsConfig(): Promise<import("./type").VitsConfig<"GPT-SoVITS2" | "vits-simple-api" | "gradio" | "fish-audio" | "qq-voice">[]>;
+    getSpeakerKeyIdMap(): Promise<Record<number, [import("./type").VitsConfig<"GPT-SoVITS2" | "vits-simple-api" | "gradio" | "fish-audio" | "qq-voice">, string, import("./type").GPTSoVITS2Speaker | import("./type").VitsSimpleApiSpeaker | import("./type").FishAudioSpeaker | import("./type").QQVoiceSpeaker | import("./type").GradioSpeaker]>>;
+    getSpeakerKeyMap(): Promise<Record<string, [import("./type").VitsConfig<"GPT-SoVITS2" | "vits-simple-api" | "gradio" | "fish-audio" | "qq-voice">, import("./type").GPTSoVITS2Speaker | import("./type").VitsSimpleApiSpeaker | import("./type").FishAudioSpeaker | import("./type").QQVoiceSpeaker | import("./type").GradioSpeaker]>>;
     static name: string;
     static inject: string[];
 }

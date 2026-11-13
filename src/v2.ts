@@ -1,6 +1,6 @@
 import { Context, h } from 'koishi'
 import { Config } from './config'
-import { LunaVitsService } from './service'
+import { LunaVitsEngine } from './service'
 
 /** `@chatluna/chat-voice` 的 voice handler 请求（只声明用到的字段） */
 interface VoiceRequest {
@@ -27,12 +27,16 @@ interface VoiceService {
  *
  * v2 的语音链路走 `@chatluna/chat-voice` 的 `voice` 服务：模型输出
  * `<voice>` 元素时由 handler 链渲染。这里注册一个 handler，把文本交给
- * local-vits 合成；失败时降级给后续 handler（例如 @speak 模型）或纯文本。
+ * local-vits 引擎合成；失败时降级给后续 handler（例如 @speak 模型）或纯文本。
  *
  * Koishi 4.x / ChatLuna v1 没有 `voice` 服务，`ctx.inject(['voice'])`
  * 不会触发，对旧环境无副作用。
  */
-export function applyChatlunaV2(ctx: Context, config: Config) {
+export function applyChatlunaV2(
+    ctx: Context,
+    config: Config,
+    engine: LunaVitsEngine
+) {
     const logger = ctx.logger('local-vits')
 
     ctx.inject(['voice'], (ctx) => {
@@ -51,15 +55,29 @@ export function applyChatlunaV2(ctx: Context, config: Config) {
                 }
 
                 try {
-                    const lunaVits = ctx.vits as LunaVitsService
+                    // 选中 speaker：优先 <voice> 的 voice 属性，其次配置默认值，
+                    // 最后回退到注册表里的第一个；没有 speaker 时不应调用 predict，
+                    // 否则会抛 Speaker not found 并触发永久熔断。
+                    const keyMap = engine.registry.getSpeakerKeyMap()
+                    const keys = Object.keys(keyMap)
+                    const voiceName = request.voice ?? ''
+                    const defaultName = config.defaultSpeaker ?? ''
 
-                    if (!lunaVits?.predict) {
-                        throw new Error('vits 服务尚未就绪')
+                    const speaker = keyMap[voiceName]
+                        ? voiceName
+                        : keyMap[defaultName]
+                          ? defaultName
+                          : keys[0]
+
+                    if (!speaker) {
+                        throw new Error(
+                            '没有可用的 TTS 讲者（请检查 data/local-vits/config.yml）'
+                        )
                     }
 
-                    const result = await lunaVits.predict(
+                    const result = await engine.predict(
                         text,
-                        { speaker: request.voice || config.defaultSpeaker },
+                        { speaker },
                         request.session as never
                     )
 

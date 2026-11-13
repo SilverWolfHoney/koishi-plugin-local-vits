@@ -50,12 +50,21 @@ TTS 关闭或隧道断开时，每段语音要空转约 10 秒才抛错并降级
 
 ChatLuna v2（cordis 架构）的语音链路改为 `@chatluna/chat-voice` 的 `voice` 服务：模型输出 `<voice>` 元素时，由 handler 链渲染成可发送的消息。本插件在检测到 `voice` 服务时会注册一个高优先级 handler：
 
-- 把 `<voice>` 里的文本交给 local-vits 合成（走 `ctx.vits.predict`，复用现有适配器、熔断开关与 API Key 配置）；
+- 把 `<voice>` 里的文本交给 local-vits 引擎合成（复用现有适配器、熔断开关与 API Key 配置）；
 - 合成成功返回音频元素；失败、熔断或被 `tts 关` 关闭时自动降级给后续 handler（例如 `@speak` 模型）或纯文本，不会阻断回复；
-- `<voice>` 的 `voice` 属性会当作 local-vits 的讲者名使用，留空则回退到配置里的 `defaultSpeaker`；
-- Koishi 4.x / ChatLuna v1 没有 `voice` 服务，此适配完全不生效，原有 `ctx.vits` 调用方式不受影响。
+- `<voice>` 的 `voice` 属性会当作 local-vits 的讲者名使用，留空则回退到配置里的 `defaultSpeaker`，再回退到注册表里的第一个讲者；
+- Koishi 4.x / ChatLuna v1 没有 `voice` 服务，此适配完全不生效。
 
-启用方式：在 ChatLuna v2 里安装并启用 `@chatluna/chat-voice`（提供 `voice` 服务）后，模型输出的 `<voice>` 就会优先走本地 TTS。
+### 架构变化（0.9.0）
+
+ChatLuna v2 下 `@koishijs/plugin-console` 不可用、koishi 的 `Service` 注册也不可靠，因此 0.9.0 把 TTS 核心拆成独立引擎（`LunaVitsEngine`）：
+
+- **speaker 注册表**（从 `data/local-vits/config.yml` 读取后端、拉取 speaker 列表）不再依赖 console 的 DataService；
+- **v2 下不注册 `vits` 服务**，voice handler 直接使用引擎；`tts` / `lunavits` 指令照常可用；
+- **v1 兼容**：Koishi 4.x（console + vits 服务可用）时仍会尝试注册 `vits` 服务与控制台数据服务，行为与旧版一致；
+- `data/local-vits/config.yml` 的位置以进程工作目录为基准（v2 下即 boilerplate 的 `data/local-vits/`），配置改动会自动热重载。
+
+启用方式：在 ChatLuna v2 里安装并启用 `@chatluna/chat-voice`（提供 `voice` 服务）后，模型输出的 `<voice>` 就会优先走本地 TTS。适配 v2 时建议用 `data/local-vits/config.yml` 配置后端（`vits-simple-api` 类型），控制台快捷配置 `vitsApi` 仅在 console 可用时生效。
 
 ## 安装
 

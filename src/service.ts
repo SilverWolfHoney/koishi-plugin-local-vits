@@ -4,6 +4,7 @@ import { Config } from './config'
 import Vits from '@initencounter/vits'
 import { VitsAdapter } from './adapters/base'
 import { VitsConfig } from './type'
+import { SpeakerRegistry } from './registry'
 import type {} from '@koishijs/translator'
 import type {} from '@koishijs/plugin-console'
 
@@ -42,14 +43,23 @@ export function disableTts() {
     ttsManualDisabled = true
 }
 
-export class LunaVitsService extends Vits {
+/**
+ * TTS 核心引擎：不依赖 koishi 的服务注册机制，
+ * Koishi 4.x（ChatLuna v1）与 ChatLuna v2（cordis）通用。
+ */
+export class LunaVitsEngine {
     private _adapters: Record<string, VitsAdapter> = {}
+
+    /** speaker 注册表：不依赖 console，ChatLuna v2 下同样可用 */
+    readonly registry: SpeakerRegistry
 
     constructor(
         public ctx: Context,
         public config: Config
     ) {
-        super(ctx)
+        this.registry = new SpeakerRegistry(ctx, config, (c) =>
+            this.getSpeakerList(c)
+        )
     }
 
     addAdapter(adapter: VitsAdapter) {
@@ -81,8 +91,7 @@ export class LunaVitsService extends Vits {
             lang = 'ZH'
         }
 
-        const speakerKeyMap =
-            await this.ctx.console.services.luna_vits_data.getSpeakerKeyMap()
+        const speakerKeyMap = this.registry.getSpeakerKeyMap()
 
         if (this.config.autoTranslate) {
             this.ctx.logger.debug(
@@ -134,6 +143,31 @@ export class LunaVitsService extends Vits {
         }
     }
 
+    async say(options: Vits.Result): Promise<h> {
+        const speakerKeyIdMap = this.registry.getSpeakerKeyIdMap()
+
+        return this.predict(
+            options.input,
+            {
+                speaker:
+                    speakerKeyIdMap[options.speaker_id]?.[1] ??
+                    this.config.defaultSpeaker
+            },
+            options['session']
+        )
+    }
+
+    getSpeakerList(config: VitsConfig) {
+        // 适配器由 apply 延迟注册；首次 refresh 可能早于注册，
+        // 此时 _adapters[config.type] 为 undefined，直接调用会抛错。
+        // 返回空列表，等适配器就绪后的 refresh 再加载 speakers。
+        const adapter = this._adapters[config.type]
+        if (!adapter) {
+            return []
+        }
+        return adapter.getSpeakerList(config)
+    }
+
     private async checkLanguage(input: string, lang: string): Promise<string> {
         try {
             const franc = await importFranc()
@@ -155,41 +189,36 @@ export class LunaVitsService extends Vits {
             return input
         }
     }
+}
 
-    async say(options: Vits.Result): Promise<h> {
-        const speakerKeyIdMap =
-            await this.ctx.console.services.luna_vits_data.getSpeakerKeyIdMap()
+/**
+ * Koishi 4.x / ChatLuna v1 的 `vits` 服务包装。
+ *
+ * ChatLuna v2（cordis）下 koishi 的 Service 注册不可靠，此时不注册本服务，
+ * voice handler 直接使用 {@link LunaVitsEngine}。
+ */
+export class LunaVitsService extends Vits {
+    public engine: LunaVitsEngine
 
-        return this.predict(
-            options.input,
-            {
-                speaker:
-                    speakerKeyIdMap[options.speaker_id]?.[1] ??
-                    this.config.defaultSpeaker
-            },
-            options['session']
-        )
+    constructor(
+        ctx: Context,
+        options: { config: Config; engine: LunaVitsEngine }
+    ) {
+        super(ctx)
+
+        this.engine = options.engine
+    }
+
+    predict(input: string, options: VitsAdapter.Config, session?: Session) {
+        return this.engine.predict(input, options, session)
+    }
+
+    say(options: Vits.Result) {
+        return this.engine.say(options)
     }
 
     getSpeakerList(config: VitsConfig) {
-        // 适配器由 inject(['vits', ...]) 回调延迟注册；Provider 构造期的初次
-        // refresh 可能早于注册，此时 _adapters[config.type] 为 undefined，
-        // 直接调用会抛 "Cannot read properties of undefined (reading 'getSpeakerList')"。
-        // 返回空列表，等适配器就绪后的 refresh 再加载 speakers。
-        const adapter = this._adapters[config.type]
-        if (!adapter) {
-            return []
-        }
-        return adapter.getSpeakerList(config)
-    }
-
-    static inject = {
-        console: {
-            required: true
-        },
-        gradio: {
-            required: false
-        }
+        return this.engine.getSpeakerList(config)
     }
 }
 
